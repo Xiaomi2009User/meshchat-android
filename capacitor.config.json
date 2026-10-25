@@ -1,0 +1,11 @@
+{
+  "appId": "app.meshchat.mobile",
+  "appName": "MeshChat",
+  "webDir": "www",
+  "backgroundColor": "#0E1012",
+  "server": {
+    "url": "https://meshchat.example.com",
+    "cleartext": false,
+    "androidScheme": "https"
+  }
+}

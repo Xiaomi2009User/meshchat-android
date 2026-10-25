@@ -1,0 +1,669 @@
+<!doctype html>
+<html lang="uk">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>MeshChat</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24'%3E%3Ctext y='20' font-size='20'%3E%F0%9F%92%AC%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600&family=Instrument+Serif&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<style>
+:root{--bg:#0E1012;--side:#14171B;--raise:#1B1F24;--line:#262B32;--text:#ECEAE4;--muted:#7E8590;--accent:#9DB8FF;--mine:#1D2940;--danger:#FF8A7A}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text)}
+body{font:14px/1.5 Geist,system-ui,sans-serif;-webkit-font-smoothing:antialiased}
+button,input{font:inherit;color:inherit}
+button{cursor:pointer;border:0;background:none}
+input{background:var(--raise);border:1px solid var(--line);border-radius:10px;padding:10px 12px;outline:none;min-width:0}
+input:focus{border-color:var(--accent)}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.mark{display:inline-flex;color:var(--accent)}
+.brand{display:flex;align-items:center;gap:10px;font:400 22px "Instrument Serif",serif}
+.avatar{display:grid;place-items:center;border-radius:50%;flex:none;object-fit:cover;color:#0E1012;font-weight:600}
+.btn{background:var(--text);color:var(--bg);border-radius:999px;padding:9px 18px;font-weight:500;white-space:nowrap}
+.btn:disabled{opacity:.4;cursor:default}
+.btn.ghost{background:transparent;color:var(--text);border:1px solid var(--line)}
+.btn.sm{padding:5px 12px;font-size:13px}
+.btn.quiet{background:none;color:var(--muted);padding:6px 4px}
+.btn.quiet:hover{color:var(--text)}
+.back{display:none}
+.n{font-weight:500}
+.p{color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+.tag{font-size:11px;color:var(--muted);margin-left:6px;font-weight:400}
+.sec{color:var(--muted);font-size:12px;margin-top:8px;align-self:stretch}
+.lede{color:var(--muted);margin:0}
+
+.auth,.gate{min-height:100dvh;display:grid;place-items:center;padding:24px}
+.auth-card{width:min(360px,100%);display:flex;flex-direction:column;gap:12px}
+.auth h1,.gate h1{font:400 44px/1 "Instrument Serif",serif;margin:12px 0 8px}
+.auth-card input{padding:12px 14px}
+.auth-card .btn{padding:12px;margin-top:4px}
+.seg{display:flex;gap:4px;background:var(--side);border:1px solid var(--line);border-radius:999px;padding:4px}
+.seg button{flex:1;padding:8px;border-radius:999px;color:var(--muted)}
+.seg button.on{background:var(--raise);color:var(--text)}
+.err{color:var(--danger);min-height:20px;margin:0;font-size:13px}
+.qr{background:#fff;border-radius:12px;padding:12px;width:220px;height:220px}
+.secret{font-family:ui-monospace,monospace;font-size:13px;word-break:break-all;color:var(--muted)}
+
+.app{height:100dvh;display:grid;grid-template-rows:56px 1fr}
+.top{display:grid;grid-template-columns:320px 1fr;background:var(--side);border-bottom:1px solid var(--line)}
+.top-l{display:flex;align-items:center;gap:12px;padding:0 16px;border-right:1px solid var(--line)}
+.who{margin-left:auto;display:flex;align-items:center;gap:8px;font-weight:500;min-width:0}
+.top-r{display:flex;align-items:center;gap:12px;padding:0 24px;font-weight:500;min-width:0}
+.top-r span:first-of-type{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.body{display:grid;grid-template-columns:320px 1fr;min-height:0}
+
+.side{background:var(--side);border-right:1px solid var(--line);display:flex;flex-direction:column;min-height:0}
+.search{position:relative;padding:14px 16px 6px}
+.search svg{position:absolute;left:28px;top:calc(50% + 3px);transform:translateY(-50%);color:var(--muted)}
+.search input{width:100%;padding-left:38px}
+.newbtn{margin:4px 16px 8px;color:var(--muted);text-align:left}
+.newbtn:hover{color:var(--text)}
+.form{padding:4px 16px 14px;display:flex;flex-direction:column;gap:8px;border-bottom:1px solid var(--line)}
+.row2{display:flex;gap:8px;justify-content:flex-end}
+.list{list-style:none;margin:0;padding:6px 8px;overflow:auto;flex:1}
+.item{display:flex;align-items:center;gap:12px;padding:10px;border-radius:10px;cursor:pointer;position:relative}
+.item:hover,.item.on{background:var(--raise)}
+.item.on::before{content:"";position:absolute;left:0;top:10px;bottom:10px;width:2px;border-radius:2px;background:var(--accent)}
+.item .meta{min-width:0;flex:1}
+.item time{font-size:12px;color:var(--muted);align-self:flex-start}
+.label{padding:14px 12px;color:var(--muted);font-size:13px;list-style:none}
+.settings{padding:20px;display:flex;flex-direction:column;gap:12px;align-items:flex-start;flex:1;overflow:auto}
+.acc{padding:0;overflow:visible;flex:none;width:100%}
+.tabs{display:flex;gap:6px;padding:10px;border-top:1px solid var(--line)}
+.tabs button{flex:1;padding:9px;border-radius:10px;color:var(--muted);background:var(--bg)}
+.tabs button.on{color:var(--text);background:var(--raise)}
+
+.chat{display:flex;flex-direction:column;min-height:0;background:var(--bg)}
+.log{flex:1;overflow:auto;padding:24px 28px;display:flex;flex-direction:column;gap:14px}
+.row{display:flex;gap:10px;align-items:flex-end;max-width:72%}
+.row.mine{align-self:flex-end;flex-direction:row-reverse}
+.bub{background:var(--raise);border:1px solid var(--line);border-radius:14px 14px 14px 4px;padding:9px 13px;min-width:0}
+.mine .bub{background:var(--mine);border-color:transparent;border-radius:14px 14px 4px 14px}
+.from{font-size:12px;color:var(--muted);margin-bottom:2px}
+.bub p{margin:0;white-space:pre-wrap;word-break:break-word}
+.photo{display:block;max-width:100%;max-height:340px;border-radius:8px}
+.bub time{display:block;font-size:11px;color:var(--muted);margin-top:4px;text-align:right}
+.composer{display:flex;gap:10px;align-items:center;padding:14px 24px;border-top:1px solid var(--line);background:var(--side)}
+.composer input{flex:1}
+.composer .note{color:var(--muted);font-size:13px}
+.empty{margin:auto;color:var(--muted);text-align:center}
+.empty b{display:block;font:400 28px "Instrument Serif",serif;color:var(--text);margin-bottom:6px;font-weight:400}
+
+@media (max-width:760px){
+  .top,.body{grid-template-columns:1fr}
+  .top-r:empty{display:none}
+  .app.has-chat .top-l,.app.has-chat .side{display:none}
+  .app:not(.has-chat) .chat{display:none}
+  .back{display:inline-flex}
+  .row{max-width:86%}
+  .log,.composer{padding-left:16px;padding-right:16px}
+}
+</style>
+</head>
+<body>
+<div id="app"></div>
+
+<script>
+const SB_URL = "https://meihtolfbptbtfxoknmk.supabase.co";
+const SB_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1laWh0b2xmYnB0YnRmeG9rbm1rIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTI4NDYyMDYsImV4cCI6MjEwODQyMjIwNn0.i0SOUUBkfNHytTN72mbMYFJG1d_a6qch4HdudZh0-gA";
+const CLOUD = { name: "gwd8mjrz", preset: "meshchatik" };
+const ACC_KEY = "meshchat.accounts";
+const sb = supabase.createClient(SB_URL, SB_KEY);
+
+const MARK = `<svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M5 6L12 12L19 6M12 12V19" fill="none" stroke="currentColor" stroke-width="1.5"/><g fill="currentColor"><circle cx="5" cy="6" r="2.4"/><circle cx="19" cy="6" r="2.4"/><circle cx="12" cy="12" r="2.4"/><circle cx="12" cy="19" r="2.4"/></g></svg>`;
+const SEARCH_ICON = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-4-4"/></svg>`;
+const $ = (s) => document.querySelector(s);
+
+const S = { ready: false, me: null, app: null, mfa: "ok", factorId: null, enroll: null, enrolling: false,
+  chats: [], found: [], apps: [], active: null, messages: [], members: [], tab: "chats", query: "", draft: "",
+  mode: "login", avatarFile: null, channel: null, adding: false, creating: false, newKind: "group" };
+
+// ---- helpers ----
+function h(tag, attrs = {}, ...kids) {
+  const n = document.createElement(tag);
+  for (const [k, v] of Object.entries(attrs)) {
+    if (k === "class") n.className = v;
+    else if (k.startsWith("on")) n.addEventListener(k.slice(2), v);
+    else if (v !== undefined && v !== null && v !== false) n.setAttribute(k, v === true ? "" : v);
+  }
+  for (const c of kids.flat()) if (c !== null && c !== undefined && c !== false) n.append(c);
+  return n;
+}
+function raw(tag, attrs, markup) { const n = h(tag, attrs); n.innerHTML = markup; return n; }
+const hue = (s) => [...s].reduce((a, c) => a + c.charCodeAt(0) * 7, 0) % 360;
+function avatar(name, url, size = 36) {
+  const st = `width:${size}px;height:${size}px;`;
+  if (url) return h("img", { class: "avatar", src: url, alt: "", style: st });
+  return h("span", { class: "avatar", style: st + `background:hsl(${hue(name)} 50% 70%);font-size:${Math.round(size * 0.42)}px` }, (name[0] || "?").toUpperCase());
+}
+const fmtTime = (iso) => new Date(iso).toLocaleTimeString("uk", { hour: "2-digit", minute: "2-digit" });
+const emailFor = (u) => `${u}@meshchat.local`;
+const canManage = (c) => c.kind !== "direct" && ["owner", "admin"].includes(c.role);
+const canPost = (c) => c.kind !== "channel" || ["owner", "admin"].includes(c.role);
+const cName = (c) => c.kind === "direct" ? (c.peer?.username || "?") : c.title;
+const cAvatar = (c) => c.kind === "direct" ? avatar(c.peer?.username || "?", c.peer?.avatar_url) : avatar(c.title, c.avatar_url);
+const kindLabel = (c) => c.kind === "group" ? "група" : "канал";
+
+async function uploadImage(file) {
+  const fd = new FormData();
+  fd.append("file", file);
+  fd.append("upload_preset", CLOUD.preset);
+  const r = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD.name}/image/upload`, { method: "POST", body: fd });
+  const data = await r.json();
+  if (!r.ok) throw new Error(data?.error?.message || "Завантаження не вдалося");
+  return data.secure_url;
+}
+
+// ---- accounts on this device ----
+const accounts = () => { try { return JSON.parse(localStorage.getItem(ACC_KEY)) || []; } catch { return []; } };
+function saveAccounts(list) { try { localStorage.setItem(ACC_KEY, JSON.stringify(list)); } catch {} }
+function rememberSession(session, username) {
+  if (!session || !username) return;
+  saveAccounts([...accounts().filter((a) => a.id !== session.user.id),
+    { id: session.user.id, username, access_token: session.access_token, refresh_token: session.refresh_token }]);
+}
+async function rememberCurrent() {
+  const { data: { session } } = await sb.auth.getSession();
+  rememberSession(session, S.me?.username);
+}
+async function switchTo(id) {
+  await rememberCurrent();
+  const acc = accounts().find((a) => a.id === id);
+  if (!acc) return;
+  const { error } = await sb.auth.setSession({ access_token: acc.access_token, refresh_token: acc.refresh_token });
+  if (error) {
+    saveAccounts(accounts().filter((a) => a.id !== id));
+    alert("Сесія цього акаунта завершилась. Увійдіть знову.");
+    return render();
+  }
+  S.active = null; S.adding = false; S.tab = "chats";
+  await refreshState();
+  if (S.me) { await rememberCurrent(); await loadChats(); listen(); }
+  render();
+}
+async function logout() {
+  const id = S.me.id;
+  await sb.auth.signOut({ scope: "local" });
+  saveAccounts(accounts().filter((a) => a.id !== id));
+  Object.assign(S, { me: null, app: null, mfa: "ok", enroll: null, enrolling: false, chats: [], messages: [],
+    members: [], active: null, adding: false, tab: "chats" });
+  const next = accounts()[0];
+  if (next) return switchTo(next.id);
+  render();
+}
+
+// ---- state: profile, application, 2FA ----
+async function loadMe() {
+  const { data: { session } } = await sb.auth.getSession();
+  if (!session) return null;
+  const { data } = await sb.from("profiles").select("*").eq("id", session.user.id).maybeSingle();
+  return data;
+}
+async function loadApp() {
+  const { data } = await sb.from("applications").select("status, code_used").eq("user_id", S.me.id).maybeSingle();
+  return data;
+}
+async function checkMfa() {
+  S.mfa = "ok";
+  if (!S.me?.secure) return;
+  const { data: f } = await sb.auth.mfa.listFactors();
+  const verified = (f?.totp || []).find((x) => x.status === "verified");
+  if (!verified) { S.mfa = "enroll"; return; }
+  const { data: aal } = await sb.auth.mfa.getAuthenticatorAssuranceLevel();
+  S.factorId = verified.id;
+  S.mfa = aal?.currentLevel === "aal2" ? "ok" : "verify";
+}
+async function refreshState() {
+  S.me = await loadMe();
+  S.app = S.me ? await loadApp() : null;
+  S.enroll = null; S.enrolling = false;
+  await checkMfa();
+}
+async function startEnroll() {
+  const { data: f } = await sb.auth.mfa.listFactors();
+  for (const x of f?.totp || []) if (x.status !== "verified") await sb.auth.mfa.unenroll({ factorId: x.id });
+  const { data, error } = await sb.auth.mfa.enroll({ factorType: "totp", friendlyName: "MeshChat" });
+  if (error) { S.enrolling = false; alert(error.message); return; }
+  S.enroll = { factorId: data.id, qr: data.totp.qr_code, secret: data.totp.secret };
+  render();
+}
+async function verifyCode(factorId, code) {
+  const { data: ch, error: ce } = await sb.auth.mfa.challenge({ factorId });
+  if (ce) return { error: ce };
+  return sb.auth.mfa.verify({ factorId, challengeId: ch.id, code: code.trim() });
+}
+
+// ---- data ----
+async function loadChats() {
+  const { data: mine } = await sb.from("chat_members").select("role, chats(id, kind, title, avatar_url)").eq("user_id", S.me.id);
+  const rows = (mine || []).filter((r) => r.chats);
+  const ids = rows.map((r) => r.chats.id);
+  if (!ids.length) { S.chats = []; return; }
+  const direct = rows.filter((r) => r.chats.kind === "direct").map((r) => r.chats.id);
+  const [{ data: others }, { data: msgs }] = await Promise.all([
+    direct.length ? sb.from("chat_members").select("chat_id, profiles!user_id(id, username, avatar_url)").in("chat_id", direct).neq("user_id", S.me.id) : { data: [] },
+    sb.from("messages").select("chat_id, text, image_url, created_at").in("chat_id", ids).order("created_at", { ascending: false }).limit(500)
+  ]);
+  const peerBy = {}, lastBy = {};
+  (others || []).forEach((o) => { peerBy[o.chat_id] = o.profiles; });
+  (msgs || []).forEach((m) => { if (!lastBy[m.chat_id]) lastBy[m.chat_id] = m; });
+  S.chats = rows.map((r) => ({
+    id: r.chats.id, kind: r.chats.kind, title: r.chats.title, avatar_url: r.chats.avatar_url,
+    role: r.role, peer: peerBy[r.chats.id] || null, last: lastBy[r.chats.id] || null
+  })).sort((a, b) => (b.last?.created_at || "").localeCompare(a.last?.created_at || ""));
+}
+async function loadMessages(id) {
+  const { data } = await sb.from("messages").select("*").eq("chat_id", id).order("created_at", { ascending: true }).limit(300);
+  S.messages = data || [];
+}
+async function loadMembers(id) {
+  const { data } = await sb.from("chat_members").select("role, profiles!user_id(id, username, avatar_url)").eq("chat_id", id);
+  S.members = (data || []).map((r) => ({ ...r.profiles, role: r.role }));
+}
+async function searchUsers(q) {
+  const { data } = await sb.from("profiles").select("id, username, avatar_url").ilike("username", `%${q}%`).neq("id", S.me.id).limit(20);
+  S.found = data || [];
+}
+async function openChat(c) {
+  S.active = c; S.query = ""; S.found = []; S.draft = ""; S.creating = false;
+  await Promise.all([loadMessages(c.id), loadMembers(c.id)]);
+  render();
+}
+async function openDirect(p) {
+  const { data: id, error } = await sb.rpc("open_direct_chat", { peer: p.id });
+  if (error) return alert("Не вдалося відкрити чат: " + error.message);
+  await loadChats();
+  const c = S.chats.find((x) => x.id === id);
+  if (c) await openChat(c);
+}
+async function send(payload) {
+  const { data, error } = await sb.from("messages")
+    .insert({ chat_id: S.active.id, sender_id: S.me.id, ...payload }).select().single();
+  if (error) return alert("Не вдалося надіслати: " + error.message);
+  if (!S.messages.some((m) => m.id === data.id)) S.messages.push(data);
+  S.draft = "";
+  await loadChats();
+  render();
+  document.getElementById("msg")?.focus();
+}
+async function addMember() {
+  const u = prompt("Логін нового учасника")?.trim().toLowerCase();
+  if (!u) return;
+  const { error } = await sb.rpc("add_member", { chat: S.active.id, uname: u });
+  if (error) return alert(error.message);
+  await loadMembers(S.active.id);
+  render();
+}
+async function leaveChat() {
+  if (!confirm("Покинути чат?")) return;
+  await sb.from("chat_members").delete().eq("chat_id", S.active.id).eq("user_id", S.me.id);
+  S.active = null;
+  await loadChats();
+  render();
+}
+async function adminApps() {
+  const { data } = await sb.rpc("admin_applications");
+  return data || [];
+}
+function listen() {
+  if (S.channel) sb.removeChannel(S.channel);
+  S.channel = sb.channel("mc-" + S.me.id)
+    .on("postgres_changes", { event: "INSERT", schema: "public", table: "messages" }, async ({ new: m }) => {
+      if (S.active && m.chat_id === S.active.id && !S.messages.some((x) => x.id === m.id)) S.messages.push(m);
+      await loadChats();
+      render();
+    })
+    .subscribe();
+}
+
+// ---- auth view: login, signup, Secure application ----
+function authView() {
+  const apply = S.mode === "apply", login = S.mode === "login";
+  const user = h("input", { placeholder: login ? "Логін або пошта" : "Ім'я користувача", autocomplete: "username", maxlength: "60" });
+  const email = h("input", { type: "email", placeholder: "Справжня пошта", autocomplete: "email" });
+  const pass = h("input", { type: "password", placeholder: "Пароль", autocomplete: login ? "current-password" : "new-password" });
+  const err = h("p", { class: "err" });
+  const fileIn = h("input", { type: "file", accept: "image/*", hidden: true });
+  const pickText = () => S.avatarFile ? S.avatarFile.name : "Обрати аватар (необов'язково)";
+  const pick = h("button", { type: "button", class: "btn ghost", onclick: () => fileIn.click() }, pickText());
+  fileIn.addEventListener("change", () => { S.avatarFile = fileIn.files[0] || null; pick.textContent = pickText(); });
+
+  const go = async () => {
+    const u = user.value.trim().toLowerCase(), p = pass.value, mail = email.value.trim().toLowerCase();
+    const fail = (t) => { err.textContent = t; };
+    fail("");
+    if (login) {
+      const { error } = await sb.auth.signInWithPassword({ email: u.includes("@") ? u : emailFor(u), password: p });
+      if (error) return fail("Невірний логін або пароль");
+    } else {
+      if (!/^[a-z0-9_.]{3,20}$/.test(u)) return fail("Ім'я: 3–20 символів, латиниця, цифри, «_» або «.»");
+      if (p.length < 6) return fail("Пароль має бути не коротшим за 6 символів");
+      if (apply && !/^\S+@\S+\.\S+$/.test(mail)) return fail("Введіть коректну пошту");
+      fail("Створюю акаунт…");
+      const { data, error } = await sb.auth.signUp({ email: apply ? mail : emailFor(u), password: p });
+      if (error) return fail(error.message.includes("already") ? "Такий користувач уже є" : error.message);
+      const { error: pe } = await sb.from("profiles").insert({ id: data.user.id, username: u });
+      if (pe) return fail(pe.message.includes("duplicate") ? "Такий користувач уже є" : pe.message);
+      if (apply) {
+        const { error: ae } = await sb.from("applications").insert({ user_id: data.user.id, username: u, email: mail });
+        if (ae) return fail(ae.message);
+      } else if (S.avatarFile) {
+        try {
+          const url = await uploadImage(S.avatarFile);
+          await sb.from("profiles").update({ avatar_url: url }).eq("id", data.user.id);
+        } catch { alert("Акаунт створено, але аватар не завантажився. Його можна додати в налаштуваннях"); }
+      }
+    }
+    await refreshState();
+    S.avatarFile = null; S.adding = false; S.mode = "login"; S.active = null; S.tab = "chats";
+    if (S.me) { await rememberCurrent(); await loadChats(); listen(); }
+    render();
+  };
+  [user, pass, email].forEach((i) => i.addEventListener("keydown", (e) => { if (e.key === "Enter") go(); }));
+
+  const tab = (m, label) => h("button", { class: S.mode === m ? "on" : "", onclick: () => { S.mode = m; S.avatarFile = null; render(); } }, label);
+  return h("section", { class: "auth" },
+    h("div", { class: "auth-card" },
+      raw("span", { class: "mark" }, MARK),
+      h("h1", {}, "MeshChat"),
+      apply
+        ? h("p", { class: "sec" }, "Заявка на Meshchat Secure. Після схвалення адміністратор передасть вам код доступу.")
+        : h("div", { class: "seg" }, tab("login", "Увійти"), tab("signup", "Реєстрація")),
+      user,
+      apply && email,
+      pass,
+      !login && !apply && pick, !login && !apply && fileIn,
+      err,
+      h("button", { class: "btn", onclick: go }, apply ? "Надіслати заявку" : login ? "Увійти" : "Створити акаунт"),
+      !apply && h("button", { class: "btn quiet", onclick: () => { S.mode = "apply"; render(); } }, "Подати заявку на Meshchat Secure"),
+      apply && h("button", { class: "btn quiet", onclick: () => { S.mode = "login"; render(); } }, "← Назад до входу"),
+      S.adding && h("button", { class: "btn quiet", onclick: () => { S.adding = false; render(); } }, "Скасувати")
+    )
+  );
+}
+
+// ---- gate: Secure steps before the app ----
+function statusView(title, text, extra = []) {
+  return h("section", { class: "gate" },
+    h("div", { class: "auth-card" },
+      raw("span", { class: "mark" }, MARK),
+      h("h1", {}, title),
+      h("p", { class: "lede" }, text),
+      ...extra,
+      h("button", { class: "btn quiet", onclick: logout }, "Вийти")));
+}
+function codeView() {
+  const input = h("input", { placeholder: "Код від адміністратора", maxlength: "10", autocomplete: "off" });
+  const err = h("p", { class: "err" });
+  const go = async () => {
+    const { data, error } = await sb.rpc("redeem_code", { p_code: input.value });
+    if (error || !data) return (err.textContent = "Код невірний або вже використаний");
+    await refreshState();
+    render();
+  };
+  return statusView("Код доступу", "Заявку схвалено. Введіть код, який передав адміністратор.", [input, err,
+    h("button", { class: "btn", onclick: go }, "Підтвердити")]);
+}
+function enrollView() {
+  if (!S.enroll) {
+    if (!S.enrolling) { S.enrolling = true; startEnroll(); }
+    return statusView("Налаштування 2FA", "Завантаження…");
+  }
+  const input = h("input", { placeholder: "6-значний код", inputmode: "numeric", maxlength: "6", autocomplete: "one-time-code" });
+  const err = h("p", { class: "err" });
+  const go = async () => {
+    const { error } = await verifyCode(S.enroll.factorId, input.value);
+    if (error) return (err.textContent = "Невірний код. Спробуйте ще раз");
+    S.enroll = null; S.enrolling = false; S.mfa = "ok";
+    render();
+  };
+  return statusView("Увімкніть 2FA", "Обов'язковий крок для Secure. Відскануйте QR-код у Google Authenticator, Authy або 1Password і введіть код.", [
+    h("img", { class: "qr", src: S.enroll.qr, alt: "QR-код для 2FA" }),
+    h("p", { class: "secret" }, "Або введіть ключ вручну: " + S.enroll.secret),
+    input, err,
+    h("button", { class: "btn", onclick: go }, "Підтвердити")]);
+}
+function verifyView() {
+  const input = h("input", { placeholder: "6-значний код з аутентифікатора", inputmode: "numeric", maxlength: "6", autocomplete: "one-time-code" });
+  const err = h("p", { class: "err" });
+  const go = async () => {
+    const { error } = await verifyCode(S.factorId, input.value);
+    if (error) return (err.textContent = "Невірний код");
+    S.mfa = "ok";
+    render();
+  };
+  return statusView("Вхід з 2FA", "Введіть код із застосунку-аутентифікатора.", [input, err,
+    h("button", { class: "btn", onclick: go }, "Увійти")]);
+}
+function gate() {
+  if (S.app?.status === "pending") return statusView("Заявка розглядається", "Коли адміністратор її розгляне, ви побачите статус тут після входу.",
+    [h("button", { class: "btn ghost", onclick: async () => { await refreshState(); render(); } }, "Перевірити статус")]);
+  if (S.app?.status === "rejected") return statusView("Заявку відхилено", "Адміністратор не схвалив заявку на Meshchat Secure.");
+  if (S.app?.status === "approved" && !S.app.code_used) return codeView();
+  if (S.me.secure && S.mfa === "enroll") return enrollView();
+  if (S.me.secure && S.mfa === "verify") return verifyView();
+  return null;
+}
+
+// ---- app views ----
+function topbar() {
+  const c = S.active;
+  const right = c && [
+    h("button", { class: "btn quiet back", onclick: () => { S.active = null; render(); } }, "Назад"),
+    cAvatar(c),
+    h("span", {}, cName(c)),
+    c.kind !== "direct" && h("span", { class: "tag" }, kindLabel(c)),
+    canManage(c) && h("button", { class: "btn ghost sm", onclick: addMember }, "Додати"),
+    c.kind !== "direct" && h("button", { class: "btn quiet", onclick: leaveChat }, "Покинути")
+  ];
+  return h("header", { class: "top" },
+    h("div", { class: "top-l" },
+      h("span", { class: "brand" }, raw("span", { class: "mark" }, MARK), "MeshChat"),
+      h("div", { class: "who" }, avatar(S.me.username, S.me.avatar_url, 28), h("span", {}, S.me.username))),
+    h("div", { class: "top-r" }, right));
+}
+
+function sidebar() {
+  const list = h("ul", { class: "list" });
+  const fill = () => list.replaceChildren(...rows());
+  fill();
+  const search = h("div", { class: "search" },
+    raw("span", {}, SEARCH_ICON),
+    h("input", {
+      placeholder: "Пошук людей", value: S.query,
+      oninput: async (e) => {
+        S.query = e.target.value;
+        const q = S.query.trim().toLowerCase();
+        if (q) await searchUsers(q); else S.found = [];
+        fill();
+      }
+    }));
+  const create = S.creating ? createForm()
+    : h("button", { class: "btn quiet newbtn", onclick: () => { S.creating = true; render(); } }, "+ Нова група або канал");
+  const tabs = [["chats", "Чати"], ["settings", "Налаштування"]];
+  if (S.me.is_admin) tabs.push(["admin", "Заявки"]);
+  const btns = tabs.map(([t, label]) => h("button", {
+    class: S.tab === t ? "on" : "",
+    onclick: async () => { S.tab = t; if (t === "admin") S.apps = await adminApps(); render(); }
+  }, label));
+  const panel = S.tab === "chats" ? [search, create, list] : S.tab === "admin" ? adminPanel() : settingsPanel();
+  return h("aside", { class: "side" }, panel, h("nav", { class: "tabs" }, btns));
+}
+
+function createForm() {
+  const title = h("input", { placeholder: "Назва" });
+  const names = h("input", { placeholder: "Логіни учасників через кому" });
+  const kind = (k, label) => h("button", { class: S.newKind === k ? "on" : "", onclick: () => { S.newKind = k; render(); } }, label);
+  const go = async () => {
+    const t = title.value.trim();
+    const members = names.value.split(",").map((s) => s.trim().toLowerCase()).filter(Boolean);
+    if (!t) return alert("Введіть назву");
+    const { data: id, error } = await sb.rpc("create_chat", { kind: S.newKind, title: t, members });
+    if (error) return alert("Не вдалося створити: " + error.message);
+    S.creating = false;
+    await loadChats();
+    const c = S.chats.find((x) => x.id === id);
+    if (c) return openChat(c);
+    render();
+  };
+  return h("div", { class: "form" },
+    h("div", { class: "seg" }, kind("group", "Група"), kind("channel", "Канал")),
+    title, names,
+    h("div", { class: "row2" },
+      h("button", { class: "btn quiet", onclick: () => { S.creating = false; render(); } }, "Скасувати"),
+      h("button", { class: "btn", onclick: go }, "Створити")));
+}
+
+function rows() {
+  if (S.query.trim()) {
+    return S.found.length
+      ? S.found.map((p) => h("li", { class: "item", onclick: () => openDirect(p) },
+          avatar(p.username, p.avatar_url),
+          h("div", { class: "meta" }, h("div", { class: "n" }, p.username))))
+      : [h("li", { class: "label" }, "Нікого не знайдено")];
+  }
+  if (!S.chats.length) return [h("li", { class: "label" }, "Чатів ще немає. Знайдіть людину або створіть групу.")];
+  return S.chats.map(chatRow);
+}
+
+function chatRow(c) {
+  const last = c.last;
+  return h("li", { class: "item" + (S.active?.id === c.id ? " on" : ""), onclick: () => openChat(c) },
+    cAvatar(c),
+    h("div", { class: "meta" },
+      h("div", { class: "n" }, cName(c), c.kind !== "direct" && h("span", { class: "tag" }, kindLabel(c))),
+      h("div", { class: "p" }, last ? (last.image_url ? "Фото" : last.text) : "Немає повідомлень")),
+    last && h("time", {}, fmtTime(last.created_at)));
+}
+
+function accountRows() {
+  return accounts().map((a) => h("li", {
+    class: "item" + (a.id === S.me.id ? " on" : ""),
+    onclick: () => (a.id === S.me.id ? null : switchTo(a.id))
+  },
+    avatar(a.username, null),
+    h("div", { class: "meta" }, h("div", { class: "n" }, a.username)),
+    a.id === S.me.id && h("span", { class: "p" }, "Активний")));
+}
+
+function settingsPanel() {
+  const fileIn = h("input", { type: "file", accept: "image/*", hidden: true });
+  const btn = h("button", { class: "btn ghost", onclick: () => fileIn.click() }, "Змінити аватар");
+  fileIn.addEventListener("change", async () => {
+    const f = fileIn.files[0];
+    if (!f) return;
+    btn.textContent = "Завантажую…";
+    try {
+      const url = await uploadImage(f);
+      await sb.from("profiles").update({ avatar_url: url }).eq("id", S.me.id);
+      S.me.avatar_url = url;
+      render();
+    } catch (e) { btn.textContent = "Помилка: " + e.message; }
+  });
+  return h("div", { class: "settings" },
+    avatar(S.me.username, S.me.avatar_url, 72),
+    h("div", { class: "n" }, S.me.username),
+    S.me.secure && h("div", { class: "p" }, "Meshchat Secure · 2FA увімкнено"),
+    btn, fileIn,
+    h("div", { class: "sec" }, "Акаунти на цьому пристрої"),
+    h("ul", { class: "list acc" }, accountRows()),
+    h("button", { class: "btn ghost", onclick: async () => { await rememberCurrent(); S.adding = true; render(); } }, "Додати акаунт"),
+    h("button", { class: "btn ghost", onclick: logout }, "Вийти з цього акаунта"));
+}
+
+function adminPanel() {
+  const act = async (a, approve) => {
+    const { data: code, error } = await sb.rpc("admin_review", { p_user: a.user_id, p_approve: approve });
+    if (error) return alert(error.message);
+    if (approve) alert(`Код доступу для ${a.username}: ${code}. Передайте його особисто.`);
+    S.apps = await adminApps();
+    render();
+  };
+  const items = S.apps.map((a) => {
+    const codeInfo = a.status === "approved" ? (a.code_used ? "код використано" : "код " + a.access_code) : "";
+    return h("li", { class: "item" },
+      avatar(a.username, null),
+      h("div", { class: "meta" },
+        h("div", { class: "n" }, a.username),
+        h("div", { class: "p" }, [a.email, a.status, codeInfo].filter(Boolean).join(" · "))),
+      a.status === "pending" && h("div", { class: "row2" },
+        h("button", { class: "btn sm", onclick: () => act(a, true) }, "Схвалити"),
+        h("button", { class: "btn ghost sm", onclick: () => act(a, false) }, "Відхилити")));
+  });
+  return h("div", { class: "settings" },
+    h("div", { class: "sec" }, "Заявки на Meshchat Secure"),
+    h("ul", { class: "list acc" }, items.length ? items : [h("li", { class: "label" }, "Заявок немає")]));
+}
+
+function bubble(m, c) {
+  const mine = m.sender_id === S.me.id;
+  const who = mine ? S.me : (S.members.find((x) => x.id === m.sender_id) || { username: "?" });
+  return h("div", { class: mine ? "row mine" : "row" },
+    avatar(who.username, who.avatar_url, 32),
+    h("div", { class: "bub" },
+      !mine && c.kind === "group" && h("div", { class: "from" }, who.username),
+      m.image_url ? h("img", { class: "photo", src: m.image_url, alt: "Фото", loading: "lazy" }) : h("p", {}, m.text),
+      h("time", {}, fmtTime(m.created_at))));
+}
+
+function chatPane() {
+  const c = S.active;
+  if (!c) {
+    return h("main", { class: "chat" },
+      h("div", { class: "empty" }, h("b", {}, "Оберіть чат"), "Знайдіть людину або створіть групу чи канал."));
+  }
+  const log = h("div", { class: "log" },
+    S.messages.length ? S.messages.map((m) => bubble(m, c)) : h("p", { class: "empty" }, "Напишіть перше повідомлення"));
+  if (!canPost(c)) {
+    return h("main", { class: "chat" }, log,
+      h("div", { class: "composer" }, h("span", { class: "note" }, "У цей канал пишуть лише адміністратори")));
+  }
+  const fileIn = h("input", { type: "file", accept: "image/*", hidden: true });
+  const photo = h("button", { class: "btn ghost", onclick: () => fileIn.click() }, "Фото");
+  const text = h("input", { id: "msg", value: S.draft, placeholder: "Написати повідомлення…", maxlength: "2000", autocomplete: "off",
+    oninput: (e) => { S.draft = e.target.value; } });
+  const sendText = () => { const t = S.draft.trim(); if (t) send({ text: t }); };
+  text.addEventListener("keydown", (e) => { if (e.key === "Enter") sendText(); });
+  fileIn.addEventListener("change", async () => {
+    const f = fileIn.files[0];
+    if (!f) return;
+    photo.disabled = true; photo.textContent = "Надсилаю…";
+    try { await send({ image_url: await uploadImage(f) }); }
+    catch (e) { photo.disabled = false; photo.textContent = "Помилка, ще раз"; alert("Фото не надіслано: " + e.message); }
+  });
+  return h("main", { class: "chat" }, log,
+    h("div", { class: "composer" }, fileIn, photo, text, h("button", { class: "btn", onclick: sendText }, "Надіслати")));
+}
+
+function appView() {
+  return h("div", { class: "app" + (S.active ? " has-chat" : "") },
+    topbar(),
+    h("div", { class: "body" }, sidebar(), chatPane()));
+}
+
+// ---- render ----
+function render() {
+  const root = $("#app");
+  if (!S.ready) { root.replaceChildren(); return; }
+  if (!S.me || S.adding) { root.replaceChildren(authView()); return; }
+  root.replaceChildren(gate() || appView());
+  const log = $(".log");
+  if (log) log.scrollTop = log.scrollHeight;
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (session && S.me && session.user.id === S.me.id) rememberSession(session, S.me.username);
+});
+
+(async () => {
+  await refreshState();
+  if (S.me) { await rememberCurrent(); await loadChats(); listen(); }
+  S.ready = true;
+  render();
+})();
+</script>
+</body>
+</html>
