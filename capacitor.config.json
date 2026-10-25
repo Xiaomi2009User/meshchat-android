@@ -4,7 +4,7 @@
   "webDir": "www",
   "backgroundColor": "#0E1012",
   "server": {
-    "url": "https://meshchat.example.com",
+    "url": "https://meshchatik.xiaomi2009user.workers.dev",
     "cleartext": false,
     "androidScheme": "https"
   }
